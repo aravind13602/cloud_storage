@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron Cloud Sync</title>
+</head>
+<body>
+    <h1>Cloud File Sync</h1>
+    <button id="selectFolder">Select Folder</button>
+    <p id="folderPath"></p>
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        document.getElementById('selectFolder').addEventListener('click', async () => {
+            const folder = await ipcRenderer.invoke('select-folder');
+            if (folder) {
+                document.getElementById('folderPath').innerText = `Watching: ${folder}`;
+            }
+        });
+    </script>
+</body>
+</html>
