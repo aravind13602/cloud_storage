@@ -4,9 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Electron Cloud Sync</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #folderPath {
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .instructions {
+            color: #666;
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body>
     <h1>Cloud File Sync</h1>
+    <p class="instructions">Select a folder to start syncing files to the cloud</p>
     <button id="selectFolder">Select Folder</button>
     <p id="folderPath"></p>
     <script>

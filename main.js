@@ -1,4 +1,4 @@
-const { app, dialog, BrowserWindow } = require('electron');
+const { app, dialog, BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -13,20 +13,26 @@ app.whenReady().then(() => {
         width: 800,
         height: 600,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
         }
     });
 
-    selectedFolder = dialog.showOpenDialogSync({
+    mainWindow.loadFile('index.html');
+});
+
+// Add IPC handler for folder selection
+ipcMain.handle('select-folder', async () => {
+    const result = await dialog.showOpenDialog({
         properties: ['openDirectory']
-    })?.[0];
+    });
 
-    if (!selectedFolder) {
-        app.quit();
-        return;
+    if (!result.canceled && result.filePaths.length > 0) {
+        selectedFolder = result.filePaths[0];
+        watchFolder(selectedFolder);
+        return selectedFolder;
     }
-
-    watchFolder(selectedFolder);
+    return null;
 });
 
 const watchFolder = (folderPath) => {
