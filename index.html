@@ -4,49 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cloud Sync</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #folderPath {
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-            margin: 20px 0;
-            word-break: break-all;
-        }
-        .instructions {
-            color: #666;
-            margin: 20px 0;
-        }
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        .toggle-label {
-            margin-right: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9fafb;
         }
         .toggle {
             position: relative;
@@ -87,23 +49,116 @@
         input:checked + .slider:before {
             transform: translateX(26px);
         }
-        
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <h1>Cloud File Sync</h1>
-    <p class="instructions">Select a folder to start syncing files to the cloud</p>
-    <button id="selectFolder">Select Folder</button>
-    <p id="folderPath"></p>
-    
-    <div class="toggle-container">
-        <span class="toggle-label">Auto Start:</span>
-        <label class="toggle">
-            <input type="checkbox" id="autoStartToggle">
-            <span class="slider"></span>
-        </label>
+    <div id="app" class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Registration Page -->
+        <div id="registrationPage" class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Cloud File Sync - Registration</h1>
+            <form id="registrationForm" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="name" name="name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="companyName" class="block text-sm font-medium text-gray-700">Company Name</label>
+                    <input type="text" id="companyName" name="companyName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="companyId" class="block text-sm font-medium text-gray-700">Company ID (2-3 characters)</label>
+                    <input type="text" id="companyId" name="companyId" required maxlength="3" pattern="[A-Za-z]{2,3}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <p class="text-xs text-gray-500 mt-1">Company ID should be 2-3 alphabetic characters (e.g., AA, XYZ)</p>
+                </div>
+                <div class="flex justify-center">
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Register
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Main App Page (initially hidden) -->
+        <div id="mainAppPage" class="hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Cloud File Sync</h1>
+                    <div class="flex items-center">
+                        <span class="text-sm text-gray-600 mr-2">Auto Start:</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="autoStartToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-700 mb-2">Company Information</h2>
+                    <div id="companyInfo" class="bg-gray-50 p-4 rounded-md">
+                        <p><span class="font-medium">Company:</span> <span id="displayCompanyName"></span></p>
+                        <p><span class="font-medium">Company ID:</span> <span id="displayCompanyId"></span></p>
+                        <p><span class="font-medium">Sync Folder:</span> <span id="folderPath" class="text-blue-600"></span></p>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-lg font-semibold text-gray-700">Job Management</h2>
+                        <button id="createJobBtn" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            + New Job
+                        </button>
+                    </div>
+                    <div id="jobsList" class="space-y-2">
+                        <!-- Jobs will be listed here dynamically -->
+                        <div class="text-sm text-gray-500 italic">No jobs created yet.</div>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-700 mb-2">Recent Activity</h2>
+                    <div id="activityLog" class="bg-gray-50 p-4 rounded-md h-40 overflow-y-auto text-sm">
+                        <!-- Activity logs will appear here -->
+                        <div class="text-gray-500">No recent activity.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Job Creation Modal (initially hidden) -->
+        <div id="jobModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Create New Job</h2>
+                <form id="jobForm" class="space-y-4">
+                    <div>
+                        <label for="jobName" class="block text-sm font-medium text-gray-700">Job Name</label>
+                        <input type="text" id="jobName" name="jobName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="jobId" class="block text-sm font-medium text-gray-700">Job ID (1 character)</label>
+                        <input type="text" id="jobId" name="jobId" required maxlength="1" pattern="[A-Za-z]" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Job ID should be a single alphabetic character (e.g., A, B, C)</p>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancelJobBtn" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Create Job
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="renderer.js"></script>
 </body>
 </html>
+
