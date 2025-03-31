@@ -225,6 +225,94 @@ class ElectronCloudSync {
     return path.join(companyFolderPath, jobFolderName)
   }
 
+  handleFileEvent(eventType, filePath) {
+    console.log(`📂 File ${eventType}:`, filePath)
+
+    // Only process if user is registered
+    if (!this.userData) return
+
+    // Get the directory containing the file
+    const dirPath = path.dirname(filePath)
+    const fileName = path.basename(filePath)
+
+    // Check if the file is in a job folder
+    if (this.isInJobFolder(dirPath)) {
+      // Get job information based on the folder
+      const jobInfo = this.getJobInfoFromPath(dirPath)
+      if (!jobInfo) return
+
+      // Check if file needs renaming
+      const filePrefix = this.userData.companyId + jobInfo.jobId
+
+      if (!fileName.startsWith(filePrefix)) {
+        // File needs renaming
+        this.renameAndUploadFile(filePath, jobInfo)
+      } else {
+        // File already has correct naming, just upload
+        this.uploadFile(filePath)
+      }
+    }
+    // Check if the file is directly in the company folder
+    else if (this.isInCompanyFolder(dirPath)) {
+      // Check if file needs renaming
+      const companyPrefix = this.userData.companyId
+
+      if (!fileName.startsWith(companyPrefix + "C")) {
+        // File needs renaming with company format
+        this.renameAndUploadCompanyFile(filePath)
+      } else {
+        // File already has correct naming, just upload
+        this.uploadFile(filePath)
+      }
+    }
+  }
+
+  // Add a method to check if a path is the company folder
+  isInCompanyFolder(dirPath) {
+    const companyFolderPath = this.getCompanyFolderPath()
+    return dirPath === companyFolderPath
+  }
+
+  // Add a method to rename and upload files in the company folder
+  async renameAndUploadCompanyFile(filePath) {
+    try {
+      if (!fsSync.existsSync(filePath)) return
+
+      const fileName = path.basename(filePath)
+      const dirPath = path.dirname(filePath)
+
+      // Generate new file name
+      const companyKey = this.userData.companyId
+
+      // Initialize resource number if not exists
+      if (!this.resourceNumbers[companyKey]) {
+        this.resourceNumbers[companyKey] = { fileNo: 0 }
+      }
+
+      // Increment file number
+      this.resourceNumbers[companyKey].fileNo++
+
+      // Format file number with leading zeros
+      const fileNo = this.resourceNumbers[companyKey].fileNo.toString().padStart(3, "0")
+
+      // New file name format: CompanyID + "C" + ResNo + "_" + original filename
+      const newFileName = `${companyKey}C${fileNo}_${fileName}`
+      const newFilePath = path.join(dirPath, newFileName)
+
+      // Rename the file
+      await fs.rename(filePath, newFilePath)
+      console.log(`✅ Renamed company file: ${fileName} -> ${newFileName}`)
+
+      // Notify renderer
+      this.mainWindow.webContents.send("file-renamed", fileName, newFileName)
+
+      // Upload the renamed file
+      this.uploadFile(newFilePath)
+    } catch (error) {
+      console.error("❌ Rename company file failed:", error.message)
+    }
+  }
+
   setupIpcHandlers() {
     // Registration handlers
     ipcMain.handle("check-registration", async () => {
@@ -370,6 +458,24 @@ class ElectronCloudSync {
         return false
       }
     })
+
+    // Add new handler to get files for a job
+    ipcMain.handle("get-job-files", async (event, jobId) => {
+      try {
+        if (!this.userData) {
+          throw new Error("User not registered")
+        }
+
+        const filePrefix = this.userData.companyId + jobId
+
+        // Get files from server that match the prefix
+        const response = await axios.get(`http://localhost:3000/files?prefix=${filePrefix}`)
+        return response.data.files || []
+      } catch (error) {
+        console.error("❌ Error getting job files:", error)
+        throw new Error(`Failed to get job files: ${error.message}`)
+      }
+    })
   }
 
   async saveSelectedFolder(folderPath) {
@@ -410,35 +516,6 @@ class ElectronCloudSync {
       .on("error", (error) => {
         console.error("❌ Watcher error:", error)
       })
-  }
-
-  handleFileEvent(eventType, filePath) {
-    console.log(`📂 File ${eventType}:`, filePath)
-
-    // Only process if user is registered
-    if (!this.userData) return
-
-    // Get the directory containing the file
-    const dirPath = path.dirname(filePath)
-    const fileName = path.basename(filePath)
-
-    // Skip if it's not in a job folder
-    if (!this.isInJobFolder(dirPath)) return
-
-    // Get job information based on the folder
-    const jobInfo = this.getJobInfoFromPath(dirPath)
-    if (!jobInfo) return
-
-    // Check if file needs renaming
-    const filePrefix = this.userData.companyId + jobInfo.jobId
-
-    if (!fileName.startsWith(filePrefix)) {
-      // File needs renaming
-      this.renameAndUploadFile(filePath, jobInfo)
-    } else {
-      // File already has correct naming, just upload
-      this.uploadFile(filePath)
-    }
   }
 
   isInJobFolder(dirPath) {
